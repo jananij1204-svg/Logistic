@@ -6,23 +6,26 @@ import os
 st.set_page_config(page_title="Heart Disease Prediction", layout="centered")
 st.title("❤️ Heart Disease Prediction (Framingham Dataset)")
 
-MODEL_PATH = "logistic (4).pkl"   # Must be in same folder as app.py
+MODEL_PATH = "logistic_14 (2).pkl"
 
-# Load model
+# ------------------------------------------------
+# LOAD MODEL + SCALER
+# ------------------------------------------------
 @st.cache_resource
 def load_model():
     if os.path.exists(MODEL_PATH):
         with open(MODEL_PATH, "rb") as f:
-            return pickle.load(f)
+            model, scaler = pickle.load(f)
+        return model, scaler
     else:
-        st.error(f"❌ Model file not found. Place '{MODEL_PATH}' in the same folder.")
-        return None
+        st.error("❌ Model file not found! Place logistic_14.pkl in the same folder.")
+        return None, None
 
-model = load_model()
+model, scaler = load_model()
 
-# --------------------------------------
-# INPUT FIELDS (15 FEATURES)
-# --------------------------------------
+# ------------------------------------------------
+# INPUT UI (14 FEATURES)
+# ------------------------------------------------
 st.header("📌 Patient Information")
 
 col1, col2 = st.columns(2)
@@ -45,7 +48,9 @@ with col2:
     heartRate = st.number_input("Heart Rate", 30, 220, 70)
     glucose = st.number_input("Glucose", 40, 500, 80)
 
-# Prepare input array
+# ------------------------------------------------
+# PREPARE INPUT FOR MODEL
+# ------------------------------------------------
 input_data = np.array([[
     1 if male == "Male" else 0,
     age,
@@ -63,17 +68,18 @@ input_data = np.array([[
     glucose
 ]])
 
-# --------------------------------------
-# PREDICTION
-# --------------------------------------
+# ------------------------------------------------
+# PREDICTION BUTTON
+# ------------------------------------------------
 st.write("")
 
 if st.button("🔍 Predict"):
     if model is None:
         st.error("Model not loaded.")
     else:
-        pred = model.predict(input_data)[0]
-        prob = model.predict_proba(input_data)[0][1]
+        scaled_data = scaler.transform(input_data)
+        pred = model.predict(scaled_data)[0]
+        prob = model.predict_proba(scaled_data)[0][1]
 
         if pred == 1:
             st.error(f"⚠️ High Risk of Heart Disease\nProbability: {prob:.2f}")
